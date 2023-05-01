@@ -1,4 +1,4 @@
-const { conn, Todo, Category } = require('./db');
+const { conn, seedData, Todo, Category } = require('./db');
 const express = require('express');
 const app = express();
 app.use(express.urlencoded());
@@ -98,7 +98,6 @@ app.post('/todos', async(req, res, next)=> {
   try {
     const todo = await Todo.create(req.body);
     res.redirect(`/todos/${todo.id}`);
-
   }
   catch(ex){
     next(ex);
@@ -119,19 +118,7 @@ app.listen(port, async()=> {
     console.log(`listening on port ${port}`);
     await conn.sync({ force: true });
     console.log('connected');
-    const categories = await Promise.all([
-      Category.create({ name: 'pets'}),
-      Category.create({ name: 'learning'}),
-      Category.create({ name: 'chores'}),
-    ]);
-    const [pets, learning, chores] = categories;
-
-    await Promise.all([
-      Todo.create({ name: 'walk the dog', categoryId: pets.id}),
-      Todo.create({ name: 'buy a chew toy', categoryId: pets.id}),
-      Todo.create({ name: 'learn react', categoryId: learning.id}),
-      Todo.create({ name: 'take out garbage', categoryId: chores.id })
-    ]);
+    await seedData();
     console.log('seeded');
   }
   catch(ex){
