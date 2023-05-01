@@ -14,6 +14,40 @@ const Todo = conn.define('todo', {
 const express = require('express');
 const app = express();
 
+app.get('/', (req, res)=> res.redirect('/todos'));
+
+app.get('/todos', async(req, res, next)=> {
+  try {
+    const todos = await Todo.findAll();
+    res.send(`
+      <html>
+        <head>
+          <title>Todos</title>
+        </head>
+        <body>
+          <h1>Todos</h1>
+          <ul>
+            ${
+              todos.map( todo => {
+                return `
+                  <li>
+                    <a href='/todos/${todo.id}'>
+                      ${todo.name}
+                    </a>
+                  </li>
+                `;
+              }).join('')
+            }
+          </ul>
+        </body>
+      </html>
+    `);
+  }
+  catch(ex){
+    next(ex);
+  }
+});
+
 const port = process.env.PORT || 3000;
 
 app.listen(port, async()=> {
@@ -21,8 +55,6 @@ app.listen(port, async()=> {
     console.log(`listening on port ${port}`);
     await conn.sync({ force: true });
     console.log('connected');
-    await Todo.create({ name: 'walk the dog'});
-    await Todo.create({ name: 'buy a chew toy'});
     await Promise.all([
       Todo.create({ name: 'walk the dog'}),
       Todo.create({ name: 'buy a chew toy'}),
