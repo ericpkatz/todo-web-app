@@ -13,6 +13,7 @@ const Todo = conn.define('todo', {
 
 const express = require('express');
 const app = express();
+app.use(express.urlencoded());
 
 app.get('/', (req, res)=> res.redirect('/todos'));
 
@@ -26,6 +27,7 @@ app.get('/todos', async(req, res, next)=> {
         </head>
         <body>
           <h1>Todos</h1>
+          <a href='/todos/create'>Create A todo</a>
           <ul>
             ${
               todos.map( todo => {
@@ -49,6 +51,28 @@ app.get('/todos', async(req, res, next)=> {
 });
 
 //next route here
+app.get('/todos/create', async(req, res, next)=> {
+  try {
+    res.send(`
+      <html>
+        <head>
+          <title>Todos</title>
+        </head>
+        <body>
+          <h1><a href='/todos'>Todos</a></h1>
+          <form method='POST' action='/todos'>
+            <input name='name'/>
+            <button>Create</button>
+          </form>
+        </body>
+      </html>
+    `);
+  }
+  catch(ex){
+    next(ex);
+  }
+});
+
 app.get('/todos/:id', async(req, res, next)=> {
   try {
     const todo = await Todo.findByPk(req.params.id);
@@ -67,6 +91,24 @@ app.get('/todos/:id', async(req, res, next)=> {
   catch(ex){
     next(ex);
   }
+});
+
+app.post('/todos', async(req, res, next)=> {
+  try {
+    const todo = await Todo.create(req.body);
+    res.redirect(`/todos/${todo.id}`);
+
+  }
+  catch(ex){
+    next(ex);
+  }
+});
+
+
+
+app.use((err, req, res, next)=> {
+  console.log(err);
+  res.status(500).send(err);
 });
 
 const port = process.env.PORT || 3000;
