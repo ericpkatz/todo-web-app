@@ -48,6 +48,27 @@ app.get('/todos', async(req, res, next)=> {
   }
 });
 
+//next route here
+app.get('/todos/:id', async(req, res, next)=> {
+  try {
+    const todo = await Todo.findByPk(req.params.id);
+    res.send(`
+      <html>
+        <head>
+          <title>Todos</title>
+        </head>
+        <body>
+          <h1><a href='/todos'>Todos</a></h1>
+          <h2>${ todo.name }</h2>
+        </body>
+      </html>
+    `);
+  }
+  catch(ex){
+    next(ex);
+  }
+});
+
 const port = process.env.PORT || 3000;
 
 app.listen(port, async()=> {
