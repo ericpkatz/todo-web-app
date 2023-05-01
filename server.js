@@ -8,8 +8,21 @@ const Todo = conn.define('todo', {
     validate: {
       notEmpty: true
     }
-  }
+  },
 });
+
+const Category = conn.define('category', {
+  name: {
+    type: Sequelize.STRING,
+    allowNull: false,
+    validate: {
+      notEmpty: true
+    }
+  },
+});
+
+Todo.belongsTo(Category);
+Category.hasMany(Todo);
 
 const express = require('express');
 const app = express();
@@ -19,12 +32,14 @@ app.get('/', (req, res)=> res.redirect('/todos'));
 
 app.get('/todos', async(req, res, next)=> {
   try {
-    const todos = await Todo.findAll();
+    const todos = await Todo.findAll({
+      include: [ Category ]
+    });
     res.send(`
       <html>
         <head>
           <title>Todos</title>
-        </head>
+        </head> 
         <body>
           <h1>Todos</h1>
           <a href='/todos/create'>Create A todo</a>
@@ -36,6 +51,7 @@ app.get('/todos', async(req, res, next)=> {
                     <a href='/todos/${todo.id}'>
                       ${todo.name}
                     </a>
+                    (${ todo.category.name })
                   </li>
                 `;
               }).join('')
@@ -53,6 +69,7 @@ app.get('/todos', async(req, res, next)=> {
 //next route here
 app.get('/todos/create', async(req, res, next)=> {
   try {
+    const categories = await Category.findAll();
     res.send(`
       <html>
         <head>
@@ -62,6 +79,15 @@ app.get('/todos/create', async(req, res, next)=> {
           <h1><a href='/todos'>Todos</a></h1>
           <form method='POST' action='/todos'>
             <input name='name'/>
+            <select name='categoryId'>
+              ${
+                categories.map( category => {
+                  return `
+                    <option value='${ category.id }'>${ category.name }</option>
+                  `;
+                }).join('')
+              }
+            </select>
             <button>Create</button>
           </form>
         </body>
@@ -118,11 +144,18 @@ app.listen(port, async()=> {
     console.log(`listening on port ${port}`);
     await conn.sync({ force: true });
     console.log('connected');
+    const categories = await Promise.all([
+      Category.create({ name: 'pets'}),
+      Category.create({ name: 'learning'}),
+      Category.create({ name: 'chores'}),
+    ]);
+    const [pets, learning, chores] = categories;
+
     await Promise.all([
-      Todo.create({ name: 'walk the dog'}),
-      Todo.create({ name: 'buy a chew toy'}),
-      Todo.create({ name: 'learn react'}),
-      Todo.create({ name: 'take out garbage'})
+      Todo.create({ name: 'walk the dog', categoryId: pets.id}),
+      Todo.create({ name: 'buy a chew toy', categoryId: pets.id}),
+      Todo.create({ name: 'learn react', categoryId: learning.id}),
+      Todo.create({ name: 'take out garbage', categoryId: chores.id })
     ]);
     console.log('seeded');
   }
